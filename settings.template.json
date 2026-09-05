@@ -1,0 +1,73 @@
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          { "type": "command", "command": "__CLAUDE_DIR__/hooks/turn-rules.sh" }
+        ]
+      },
+      {
+        "hooks": [
+          { "type": "command", "command": "__CLAUDE_DIR__/hooks/claude-md-refresh.sh" }
+        ]
+      },
+      {
+        "hooks": [
+          { "type": "command", "command": "__CLAUDE_DIR__/hooks/project-version-snapshot.sh" }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          { "type": "command", "command": "__CLAUDE_DIR__/hooks/block-bad-commands.sh" },
+          { "type": "command", "command": "__CLAUDE_DIR__/hooks/code-commit-e2e.sh" },
+          { "type": "command", "command": "__CLAUDE_DIR__/hooks/stale-config-warn.sh" },
+          { "type": "command", "command": "__CLAUDE_DIR__/hooks/numeric-claim-warn.sh" },
+          { "type": "command", "command": "__CLAUDE_DIR__/hooks/merge-gate-reminder.sh" }
+        ]
+      },
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          { "type": "command", "command": "__CLAUDE_DIR__/hooks/block-test-edits.sh" },
+          { "type": "command", "command": "__CLAUDE_DIR__/hooks/block-guard-edits.sh" },
+          { "type": "command", "command": "__CLAUDE_DIR__/hooks/numeric-claim-warn.sh" }
+        ]
+      },
+      {
+        "matcher": "Agent",
+        "hooks": [
+          { "type": "command", "command": "__CLAUDE_DIR__/hooks/agent-spec-reminder.sh" },
+          { "type": "command", "command": "__CLAUDE_DIR__/hooks/agent-prompt-block.sh" }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          { "type": "command", "command": "__CLAUDE_DIR__/hooks/test-discipline-check.sh" }
+        ]
+      },
+      {
+        "matcher": "Agent",
+        "hooks": [
+          { "type": "command", "command": "__CLAUDE_DIR__/hooks/agent-verify-reminder.sh" }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          { "type": "command", "command": "__CLAUDE_DIR__/hooks/tracker-convergence-notice.sh" }
+        ]
+      }
+    ]
+  },
+  "statusLine": {
+    "type": "command",
+    "command": "bash __CLAUDE_DIR__/statusline-command.sh"
+  }
+}
