@@ -93,6 +93,22 @@ discuss with the user. Editing an existing test needs explicit permission.
 This is a rule about tests, not about a tool. Automatic fixers, formatters and
 in-place stream edits will change them behind the guard's back.
 
+**Tests come BEFORE the code.** For every change in behaviour, in this order:
+
+1. **The test comes from the REQUIREMENT, not from the code.** The expected value is quoted from
+   the plan, the design or the decision — never read off the code under test.
+2. **A red run BEFORE the code.** The test runs against the unchanged code and must fail **on its
+   own assertion**, not on compilation. Need a new type or field? Add a stub without behaviour first.
+3. **Only then the code** — and the test turns green.
+
+A test written after the code, retelling it, fits the result instead of checking it. Mutants
+chosen by someone who knows the code do not replace the red run. Sign of violation: the report
+says "tests green" and has no line "before the change it was red on …".
+
+**Every protective check has at least one test where it MUST fire.** A guard that the tests only
+ever feed "all fine" gets switched off silently. A test that "the check was called" is not a test
+of the check: it pins the fix, not the requirement. Sign of violation: a refusal branch with no test.
+
 ## 7. Agent spawn discipline
 
 Invoke the `agent-spec` skill before any subagent call. It classifies the task by
@@ -126,3 +142,14 @@ demands a code change, the cycle starts over, rebuild included.
 Working in the order "edit, write, edit" guarantees the document describes a
 state that no longer exists. On one pull request that class of error surfaced
 three rounds running, in a different disguise each time.
+
+## 11. Long commands run under a watchdog
+
+`Monitor(command: "~/.claude/tools/run-watched.sh <name> -- <command>", timeout_ms: 1800000)`.
+After 2 minutes with no output and no CPU a "⚠️ … check by hand" line arrives — check at once, do
+not wait. The command survives the Monitor's expiry; re-arm with `~/.claude/tools/watch-loop.sh
+<name>`. Bash `run_in_background` without the watchdog is refused by `require-watched-background.sh`
+(except wait loops `until …; do sleep …; done`).
+
+A background process that hangs looks exactly like one that works — until a human asks how many
+cores are busy. Silence has to announce itself.

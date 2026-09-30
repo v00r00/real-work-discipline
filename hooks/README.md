@@ -38,6 +38,8 @@ Four, and each one was written after the thing it blocks actually happened.
 | `block-bad-commands.sh` | Staging the whole tree, force-pushing without a lease, skipping git hooks in either form, repointing `core.hooksPath`, destroying a guard file, interactive git | Do the thing the denial names. Every message says what. |
 | `block-test-edits.sh` | Any edit to a test file | The user creates a single-use grant. The denial prints the exact command. |
 | `block-guard-edits.sh` | Any edit to a hook, to `settings.json`, or to a git-hook directory | Same mechanism, separate directory. |
+| `require-watched-background.sh` | A long command sent to the background with Bash `run_in_background` and no watchdog | Start it inside Monitor through `~/.claude/tools/run-watched.sh <name> -- <command>`. Pure wait loops (`until …; do sleep …; done`) pass. |
+| `block-git-during-e2e.sh` | A branch-moving git command (commit, merge, rebase, reset, checkout, switch, pull, cherry-pick, revert, am, stash) against a repository a recorded verification run is using | Wait for the run to end. Set `E2E_RUNNER_PATTERN` to your recorder's command line (default `e2e-run.sh <id>`) and `E2E_DEFAULT_REPO` if it runs without `--repo`. |
 | `agent-prompt-block.sh` | Subagent prompts hitting one of seven anti-patterns: too fat, too many items, mixed research-and-fix framing, no output schema, no out-of-scope, no permission to say NOT_FOUND, unverified `file:line` citations | Rewrite the prompt. There is no bypass. |
 
 ### Grants

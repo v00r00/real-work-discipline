@@ -87,12 +87,18 @@ Then the tasks. **Each step is one action, two to five minutes:**
 **Takes from earlier tasks:** <exact names and types>
 **Hands to later tasks:** <exact names and types>
 
-- [ ] Step 1. Write the failing test — <the actual test code>
-- [ ] Step 2. Run it, confirm it fails, `<command>`, expect `<failure text>`
+- [ ] Step 1. Write the failing test from the REQUIREMENT — <quote of the requirement> → <the actual test code>
+- [ ] Step 2. Run it on the code BEFORE the change, confirm it fails ON ITS OWN ASSERTION — `<command>`,
+      expect `<assertion failure text>` (a compile error does not count: add a stub without behaviour)
 - [ ] Step 3. Minimal implementation — <the actual code>
 - [ ] Step 4. Run it, confirm it passes, `<command>`
 - [ ] Step 5. Commit
 ```
+
+**Tests come BEFORE the code.** The test's expected value is taken from the text of the
+requirement, not from the code the test checks. A task without a red run before the change is not
+closed: the log gets the line "before the change it was red on …". A test written after the code,
+retelling it, fits the result; mutants chosen by someone who knows the code do not replace it.
 
 **Placeholders are plan defects, not shorthand:**
 "TBD", "finish later", "add error handling", "cover the edge cases", "same as task N" (repeat the code: tasks get read out of order), a step with no
