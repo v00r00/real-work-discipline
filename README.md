@@ -47,11 +47,13 @@ Six of them inject context. They put a rule in front of the model at the moment 
 
 Five warn about one specific way of being confidently wrong each. A number written from memory instead of from the command that produces it. Environment variable names taken from `.env.example`, which drifts silently, instead of from the code that reads them. Code committed with nothing in the message suggesting it was ever run. A test file that just grew a skip annotation.
 
-Four block outright:
+Six block outright:
 
 - `block-bad-commands.sh` catches staging the whole tree, force-pushing without a lease, skipping git hooks in either the long or the short form, repointing `core.hooksPath`, and deleting a guard.
 - `block-test-edits.sh` stops any edit to a test until a human grants it, once, for that file.
 - `block-guard-edits.sh` does the same for the hooks themselves. It was added after a probe showed the guards were protected from the shell and completely open to the editor.
+- `require-watched-background.sh` refuses to send long work to the background without a watchdog (see below).
+- `block-git-during-e2e.sh` refuses to move a branch while a recorded verification run is using it. A recorder can only notice afterwards that the head moved; an hour and a half of verification was lost that way.
 - `agent-prompt-block.sh` rejects a subagent prompt that is too fat, has no output schema, no out-of-scope list, or no permission to answer "not found".
 
 That last one has no override flag, and that is deliberate. It fires precisely when nobody feels like being careful.
@@ -97,14 +99,25 @@ Tier two reads `~/.claude/discipline/audit-tier2.conf` — a container name, a p
 
 Both refuse to report a clean run they did not earn. An empty diff fails. An unreadable artifact fails. Tier one opens by running its own secret patterns against a planted key, because a scanner that cannot fire in your environment says "no matches" and looks exactly like good news.
 
+## The watchdog for long commands
+
+`tools/run-watched.sh` starts a long command inside Claude Code's Monitor tool and watches it. After two minutes with no new output and no CPU you get `⚠️ … check by hand` with a snapshot of the machine; `✅ alive again` if it recovers; `🏁 FINISHED, exit N` at the end. The command itself is never killed.
+
+It exists because a background build sat "running" for twenty-five minutes doing nothing, and nobody knew until a human asked how many cores were busy.
+
+Signs of life are output and CPU — the command's own session, plus, for `gradle` commands, the Gradle/Kotlin daemons and test workers, and for `docker` commands the BuildKit build steps (running containers are not counted, so a busy stack next door cannot make a hung build look alive). The machine's load average is not used. The command is detached from the watcher, so a Monitor that expires after thirty minutes does not take it down; `tools/watch-loop.sh <name>` re-arms. Blind spots are written at the top of `watch-loop.sh`.
+
 ## Checking it works
 
 ```bash
 ./test/run-hook-tests.sh
 ./test/run-tier-tests.sh
+./test/run-watch-tests.sh
 ```
 
-49 cases against the installed hooks, each fed a real event on stdin. Roughly half are negative controls, cases that must be allowed through, for the reason at the top of that file: a guard that denies everything looks exactly like a guard that works.
+`run-watch-tests.sh` runs the watchdog for real with a short threshold: a silent idle command must raise the alarm, a silent busy one must not, and the command must outlive a killed watcher.
+
+62 cases against the installed hooks, each fed a real event on stdin. Roughly half are negative controls, cases that must be allowed through, for the reason at the top of that file: a guard that denies everything looks exactly like a guard that works.
 
 Writing the suite immediately paid for itself. The status line was eating its own colour reset, because `printf` read the `%` in "ctx: 72%" as a format specifier and every following line stayed yellow. The README claimed five blockers when there are four. And a portable-date fix I was confident about turned out to be a bashism that dies under `/bin/sh`.
 

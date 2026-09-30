@@ -24,4 +24,10 @@ Rules for this turn:
    user: product policy · an irreversible action · a permission only they can
    grant · a dispute over severity where the cost of being wrong is asymmetric.
    Relaying findings to the user is NOT a decision.
+
+4. TESTS BEFORE CODE. The test comes from the REQUIREMENT (plan, design,
+   decision); the expected value is quoted from its text, not read off the code.
+   Run it on the code BEFORE the change: it must fail on its own assertion, not on
+   compilation. Only then the code. A test written after the code fits the result.
+   The report carries the line "before the change it was red on …".
 RULES

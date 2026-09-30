@@ -32,7 +32,7 @@ is_test=0
 base=$(basename "$file")
 case "$base" in
   *Test.java|*IT.java|*Tests.java) is_test=1 ;;
-  *Test.kt|*IT.kt|*Tests.kt) is_test=1 ;;
+  *Test.kt|*IT.kt|*Tests.kt|*Spec.kt) is_test=1 ;;
   test_*.py|*_test.py|conftest.py) is_test=1 ;;
   *.test.ts|*.test.tsx|*.test.js|*.test.jsx) is_test=1 ;;
   *.spec.ts|*.spec.tsx|*.spec.js|*.spec.jsx) is_test=1 ;;
@@ -41,6 +41,14 @@ esac
 case "$file" in
   */src/test/*) is_test=1 ;;
   *"/tests/"*.rs) is_test=1 ;;
+esac
+# Kotlin Multiplatform test source sets are called commonTest / androidUnitTest / iosTest /
+# jvmTest / desktopTest — NONE of them matches */src/test/*, and a helper file there need not
+# end in Test.kt. Any directory under src whose name ends in `Test` counts, so a new source set
+# (wasmJsTest, watchosTest) is guarded without touching this line. Without it a whole mobile
+# client once sat outside the guard while a report claimed it was guarded.
+case "$file" in
+  */src/*Test/*) is_test=1 ;;
 esac
 
 [ "$is_test" -eq 0 ] && exit 0

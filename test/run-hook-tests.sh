@@ -75,6 +75,33 @@ check "editing a Java test"         deny  block-test-edits.sh '{"tool_input":{"f
 check "editing a pytest file"       deny  block-test-edits.sh '{"tool_input":{"file_path":"/repo/tests/test_foo.py"}}'
 check "editing production code"     allow block-test-edits.sh '{"tool_input":{"file_path":"/repo/src/main/java/Foo.java"}}'
 check "editing a README"            allow block-test-edits.sh '{"tool_input":{"file_path":"/repo/README.md"}}'
+# Kotlin Multiplatform test source sets (commonTest, desktopTest, iosTest, ...) do not match
+# */src/test/*, and a helper file there need not end in Test.kt.
+check "KMP commonTest helper file"   deny  block-test-edits.sh '{"tool_input":{"file_path":"/repo/app/src/commonTest/kotlin/Fixtures.kt"}}'
+check "KMP desktopTest spec"         deny  block-test-edits.sh '{"tool_input":{"file_path":"/repo/app/src/desktopTest/kotlin/ScreensSpec.kt"}}'
+check "KMP commonMain code"          allow block-test-edits.sh '{"tool_input":{"file_path":"/repo/app/src/commonMain/kotlin/Foo.kt"}}'
+
+echo "== require-watched-background =="
+check "background build, no watcher" deny  require-watched-background.sh '{"tool_input":{"command":"./gradlew build","run_in_background":true}}'
+check "background until, no sleep"   deny  require-watched-background.sh '{"tool_input":{"command":"until ./gradlew build; do :; done","run_in_background":true}}'
+check "background under run-watched" allow require-watched-background.sh '{"tool_input":{"command":"~/.claude/tools/run-watched.sh b -- ./gradlew build","run_in_background":true}}'
+check "background wait loop"         allow require-watched-background.sh '{"tool_input":{"command":"until grep -q done /tmp/l; do sleep 5; done","run_in_background":true}}'
+check "foreground build"             allow require-watched-background.sh '{"tool_input":{"command":"./gradlew build"}}'
+
+echo "== block-git-during-e2e =="
+# A recorded verification run is recognised by its command line; `exec -a` gives a sleeping
+# process exactly that command line.
+E2E_REPO="$(mktemp -d)"; OTHER_REPO="$(mktemp -d)"
+for r in "$E2E_REPO" "$OTHER_REPO"; do git -C "$r" init -q; done
+bash -c "exec -a 'scripts/e2e-run.sh RUN-1 --repo $E2E_REPO -- ./check.sh' sleep 60" &
+E2E_PID=$!; sleep 0.3
+check "commit while its run is live" deny  block-git-during-e2e.sh "{\"cwd\":\"$E2E_REPO\",\"tool_input\":{\"command\":\"git commit -m docs\"}}"
+check "git -C into the running repo" deny  block-git-during-e2e.sh "{\"cwd\":\"/\",\"tool_input\":{\"command\":\"git -C $E2E_REPO rebase main\"}}"
+check "read-only git during the run" allow block-git-during-e2e.sh "{\"cwd\":\"$E2E_REPO\",\"tool_input\":{\"command\":\"git status\"}}"
+check "commit in another repository" allow block-git-during-e2e.sh "{\"cwd\":\"$OTHER_REPO\",\"tool_input\":{\"command\":\"git commit -m x\"}}"
+kill "$E2E_PID" 2>/dev/null; wait "$E2E_PID" 2>/dev/null
+check "commit after the run ended"   allow block-git-during-e2e.sh "{\"cwd\":\"$E2E_REPO\",\"tool_input\":{\"command\":\"git commit -m docs\"}}"
+rm -rf "$E2E_REPO" "$OTHER_REPO"
 
 echo "== block-guard-edits =="
 check "editing a hook"              deny  block-guard-edits.sh "{\"tool_input\":{\"file_path\":\"$HOOKS_DIR/turn-rules.sh\"}}"
